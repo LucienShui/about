@@ -5,7 +5,7 @@ import numpy as np
 class TestModel(unittest.TestCase):
     def setUp(self) -> None:
         from about.model import Model
-        self.model = Model('resource/albert_chinese_tiny')
+        self.model = Model('resource/model/albert_chinese_tiny')
 
     def test_model(self):
         result = self.model.predict('现在几点了')

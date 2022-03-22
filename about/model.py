@@ -1,10 +1,8 @@
-import re
 from functools import partial  # tqdm 同行进度条
 
 import numpy as np
 import torch
 from tqdm import tqdm
-# from transformers import AlbertForSequenceClassification, BertTokenizerFast
 from transformers import AlbertModel, BertTokenizerFast
 from transformers.modeling_outputs import BaseModelOutputWithPooling
 
@@ -60,10 +58,11 @@ class Model:
             result[key] = result[key][0]
         return result
 
-    def embedding_batch(self, text_list: [str], _type: str = 'CLS') -> np.ndarray:
+    def embedding_batch(self, text_list: [str], _type: str = 'CLS',
+                        batch_size: int = 32, show_progress_bar: bool = False) -> np.ndarray:
         if _type not in ['CLS', 'MEAN', 'MAX', 'MIN', 'AVG']:
             raise ValueError('_type must be one of "CLS", "MEAN", "MAX", "MIN", "AVG"')
-        predict_result = self.predict_batch(text_list)
+        predict_result = self.predict_batch(text_list, batch_size, show_progress_bar)
         if _type == 'CLS':
             return predict_result['pooler_output']
         if _type == 'MEAN':
@@ -80,5 +79,3 @@ class Model:
 
     def embedding(self, text: str, _type: str = 'CLS') -> np.ndarray:
         return self.embedding_batch([text], _type)[0]
-
-
