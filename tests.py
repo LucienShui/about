@@ -5,7 +5,7 @@ import numpy as np
 class TestModel(unittest.TestCase):
     def setUp(self) -> None:
         from about.model import Model
-        self.model = Model('resource/model/albert_chinese_tiny')
+        self.model = Model('resource/model/albert_chinese_tiny', embedding_type='MAX')
 
     def test_model(self):
         result = self.model.predict('现在几点了')
@@ -22,16 +22,32 @@ class TestModel(unittest.TestCase):
             '啥时候了',
             '我饿了',
             '我想看电视',
-            '今天天气怎么样'
+            '今天天气怎么样',
+            '你是男生还是女生'
         ]
 
-        _type = 'MAX'  # 在这个超迷你测试集上，MAX 效果最好
-        candidate_vector: [np.ndarray] = self.model.embedding_batch(candidate_text, _type)
+        candidate_vector: [np.ndarray] = self.model.embedding_batch(candidate_text)
 
-        result = self.model.embedding('现在几点了', _type)
+        result = self.model.embedding('现在几点了')
         for text, vector in zip(candidate_text, candidate_vector):
             print(text, cosine_similarity(result, vector))
         self.assertTrue(True)
+
+
+class TestChat(unittest.TestCase):
+    def setUp(self) -> None:
+        from about.chat import Chat
+        self.chat = Chat('resource/model/albert_chinese_tiny', embedding_type='MEAN')
+
+    def test_chat(self):
+        print(self.chat.response('你是谁'))
+
+    def test_conversation(self):
+        while True:
+            text = input()
+            if text == 'exit':
+                break
+            print(self.chat.response(text).json())
 
 
 if __name__ == '__main__':

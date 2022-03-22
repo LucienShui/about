@@ -14,8 +14,12 @@ class Module(AlbertModel, torch.nn.Module):
 
 
 class Model:
-    def __init__(self, pretrained: str):
+    def __init__(self, pretrained: str, embedding_type: str = 'CLS'):
         self.max_length = 128
+
+        self.embedding_type = embedding_type
+        if self.embedding_type not in ['CLS', 'MEAN', 'MAX', 'MIN', 'AVG']:
+            raise ValueError('self.embedding_type must be one of "CLS", "MEAN", "MAX", "MIN", "AVG"')
 
         self.pretrained = pretrained
 
@@ -58,24 +62,21 @@ class Model:
             result[key] = result[key][0]
         return result
 
-    def embedding_batch(self, text_list: [str], _type: str = 'CLS',
-                        batch_size: int = 32, show_progress_bar: bool = False) -> np.ndarray:
-        if _type not in ['CLS', 'MEAN', 'MAX', 'MIN', 'AVG']:
-            raise ValueError('_type must be one of "CLS", "MEAN", "MAX", "MIN", "AVG"')
+    def embedding_batch(self, text_list: [str], batch_size: int = 32, show_progress_bar: bool = False) -> np.ndarray:
         predict_result = self.predict_batch(text_list, batch_size, show_progress_bar)
-        if _type == 'CLS':
+        if self.embedding_type == 'CLS':
             return predict_result['pooler_output']
-        if _type == 'MEAN':
+        if self.embedding_type == 'MEAN':
             return predict_result['last_hidden_state'][:, 1:].mean(axis=1)
-        if _type == 'AVG':
+        if self.embedding_type == 'AVG':
             # 除以每个句子的长度，计算 cosine 时没有区别
             total = predict_result['last_hidden_state'][:, 1:].sum(axis=1)
             length = np.array([len(each) - 1 for each in self.tokenizer(text_list)['input_ids']])
             return total / length.reshape(len(text_list), 1)
-        if _type == 'MAX':
+        if self.embedding_type == 'MAX':
             return predict_result['last_hidden_state'][:, 1:].max(axis=1)
-        if _type == 'MIN':
+        if self.embedding_type == 'MIN':
             return predict_result['last_hidden_state'][:, 1:].min(axis=1)
 
-    def embedding(self, text: str, _type: str = 'CLS') -> np.ndarray:
-        return self.embedding_batch([text], _type)[0]
+    def embedding(self, text: str) -> np.ndarray:
+        return self.embedding_batch([text])[0]
