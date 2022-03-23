@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chat Bot Test Page</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <div>
+        <label for="text">文本：</label>
+        <input id="text">
+        <button onclick="submitText()">提交</button>
+    </div>
+    <div>
+        <label for="question">标问：</label>
+        <p id="question"></p>
+        <label for="answer">答案：</label>
+        <p id="answer"></p>
+        <label for="score">相似度：</label>
+        <p id="score"></p>
+    </div>
+</body>
+<script type="application/javascript">
+    function post(url, data, func) {
+        window.axios.post(url, data).then(response => {
+            func(response.data);
+        }).catch(error => {
+            alert(JSON.stringify(error));
+        })
+    }
+
+    function submitText() {
+        let text = document.getElementById('text').value;
+        post('/chat', {'text': text}, function (response) {
+            for (let each of ['question', 'answer', 'score']) {
+                document.getElementById(each).innerText = response[each];
+            }
+        })
+    }
+</script>
+</html>

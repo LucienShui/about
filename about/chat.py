@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import pickle
 
@@ -30,19 +31,21 @@ class Chat:
         self.model = Model(pretrained, embedding_type)
         self.batch_size = 32
 
+        self.corpus_base_dir = 'resource/corpus'
+        self.corpus_pickle_file = 'corpus.pkl'
+
         try:
             if skip_pickle:
                 raise FileNotFoundError
-            with open('resource/corpus/corpus.pkl', 'rb') as f:
+            with open(os.path.join(self.corpus_base_dir, self.corpus_pickle_file), 'rb') as f:
                 self.corpus = pickle.load(f)
         except FileNotFoundError:
             self.corpus: [(str, str, list)] = np.concatenate([
-                self.load_corpus('resource/corpus/test.tsv'),
-                # self.load_corpus('resource/corpus/ptt.tsv'),
-                # self.load_corpus('resource/corpus/xiaohuangji.tsv'),
+                self.load_corpus(os.path.join(self.corpus_base_dir, each))
+                for each in os.listdir(self.corpus_base_dir) if each.endswith('.tsv')
             ])
 
-        with open('resource/corpus/corpus.pkl', 'wb') as f:
+        with open(os.path.join(self.corpus_base_dir, self.corpus_pickle_file), 'wb') as f:
             pickle.dump(self.corpus, f)
 
     def load_corpus(self, path: str) -> [(str, str, list)]:

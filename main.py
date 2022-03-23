@@ -1,14 +1,19 @@
-from flask import Flask, request, jsonify, Response
+from flask import Flask, request, jsonify, Response, render_template
 from about.chat import Chat
 
+bot = Chat(embedding_type='MEAN')
 app = Flask(__name__)
-chat = Chat()
 
 
-@app.route('/', methods=['GET', 'POST'])
-def response() -> Response:
-    text = request.json()['text']
-    return jsonify(chat.response(text).json())
+@app.route('/')
+def home():
+    return render_template('index.html')
+
+
+@app.route('/chat', methods=['POST'])
+def chat() -> Response:
+    text = request.json['text']
+    return jsonify(bot.response(text).json())
 
 
 def main():
