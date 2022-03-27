@@ -1,7 +1,8 @@
 from flask import Flask, request, jsonify, Response, render_template
+
 from about.chat import Chat
 
-bot = Chat(embedding_type='MEAN')
+bot = Chat()
 app = Flask(__name__)
 
 
@@ -13,11 +14,12 @@ def home():
 @app.route('/chat', methods=['POST'])
 def chat() -> Response:
     text = request.json['text']
-    return jsonify(bot.response(text).json())
+    response, response_list = bot.reply(text)
+    return jsonify(response.json())
 
 
 def main():
-    app.run(host='0.0.0.0', port=3000)
+    app.run(host='0.0.0.0', port=5000)
 
 
 if __name__ == '__main__':

@@ -1,7 +1,7 @@
-from functools import partial  # tqdm 同行进度条
-
 import numpy as np
 import torch
+from functools import partial  # tqdm 同行进度条
+from sentence_transformers import SentenceTransformer
 from tqdm import tqdm
 from transformers import AlbertModel, BertTokenizerFast
 from transformers.modeling_outputs import BaseModelOutputWithPooling
@@ -13,7 +13,15 @@ class Module(AlbertModel, torch.nn.Module):
     pass
 
 
-class Model:
+class SentenceEmbedding(object):
+    def embedding(self, text: str) -> np.ndarray:
+        raise NotImplementedError
+
+    def embedding_batch(self, text_list: [str]) -> np.ndarray:
+        raise NotImplementedError
+
+
+class ModelV1(SentenceEmbedding):
     def __init__(self, pretrained: str, embedding_type: str = 'CLS'):
         self.max_length = 128
 
@@ -80,3 +88,20 @@ class Model:
 
     def embedding(self, text: str) -> np.ndarray:
         return self.embedding_batch([text])[0]
+
+
+class ModelV2(SentenceEmbedding):
+    def __init__(self, pretrained: str, embedding_type: str = 'CLS'):
+        self.embedding_type = embedding_type
+        self.pretrained = pretrained
+        self.encoder = SentenceTransformer(self.pretrained)
+
+    def embedding(self, text: str) -> np.ndarray:
+        return self.embedding_batch([text])[0]
+
+    def embedding_batch(self, text_list: [str]) -> np.ndarray:
+        sentence_embeddings = self.encoder.encode(text_list)
+        return sentence_embeddings
+
+
+Model = ModelV2
