@@ -54,7 +54,10 @@ class Chat:
             for each in os.listdir(self.corpus_base_dir) if each.endswith('.tsv')
         ])
 
-        self.knowledge_list: [Knowledge] = []
+        self.knowledge_list: [Knowledge] = ...
+
+    def load_knowledge(self, path: str) -> [Knowledge]:
+        pass
 
     def load_corpus(self, path: str) -> [(str, str, list)]:
         path_without_ext, ext = os.path.splitext(path)
@@ -98,10 +101,10 @@ class Chat:
 
     def reply(self, text: str, top_k: int = 3, threshold: float = 0.7) -> (ChatResponse, [ChatResponse]):
         vector = self.model.embedding(text)
-        cosine_similarity_list = [cosine_similarity(vector, v) for _, _, v in self.corpus]
-        sorted_index = sorted(range(len(cosine_similarity_list)), key=lambda x: cosine_similarity_list[x], reverse=True)
-        response_list = [ChatResponse(
-            question=self.corpus[index][0], answer=self.corpus[index][1], score=cosine_similarity_list[index]
-        ) for index in sorted_index[:top_k]]
+        cosine_similarity_list: [(float, str)] = [
+            self.cosine_similarity(vector, knowledge) for knowledge in self.knowledge_list]
+        sorted_index = sorted(range(len(self.knowledge_list)), key=lambda x: cosine_similarity_list[x][0], reverse=True)
+        response_list = [ChatResponse(question=cosine_similarity_list[i][1], answer=self.knowledge_list[i].answer,
+                                      score=cosine_similarity_list[i][0]) for i in sorted_index[:top_k]]
         has_result = response_list[0].score >= threshold
         return response_list[0] if has_result else self.none_response, response_list[has_result:]
