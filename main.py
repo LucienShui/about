@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify, Response, render_template
 
-from about.chat import Chat
+from about.chat import Chat, ChatResponse
 
 bot = Chat()
 app = Flask(__name__)
@@ -14,12 +14,12 @@ def home():
 @app.route('/chat', methods=['POST'])
 def chat() -> Response:
     text = request.json['text']
-    response, response_list = bot.reply(text)
+    response: ChatResponse = bot.reply(text)
     return jsonify(response.json())
 
 
 def main():
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=3000)
 
 
 if __name__ == '__main__':

@@ -2,16 +2,18 @@ import os
 import pickle
 from typing import Callable
 
-from .entity import Knowledge
+import numpy as np
+
+from .entity import Knowledge, Question, MatchResult
 from .func_set import now_date
 from .model import Model
-from .tools import cosine_similarity, concatenate_lists
+from .tools import concatenate_lists, argmax
 
 
 class ChatResponse:
-    def __init__(self, question: str, answer: str, score: float):
+    def __init__(self, knowledge: Knowledge, question: str, score: float):
+        self.knowledge = knowledge
         self.question = question
-        self.__answer = answer
         self.score = score
 
         self.func_map: {str, Callable} = {
@@ -24,13 +26,14 @@ class ChatResponse:
 
     @property
     def answer(self):
-        if self.__answer.startswith('func:'):
-            func_name = self.__answer[len('func:'):]
+        if self.knowledge.answer.startswith('func:'):
+            func_name = self.knowledge.answer[len('func:'):]
             return self.func_map[func_name]()
-        return self.__answer
+        return self.knowledge.answer
 
     def json(self):
         return {
+            'knowledge': self.knowledge.name,
             'question': self.question,
             'answer': self.answer,
             'score': self.score
@@ -40,26 +43,21 @@ class ChatResponse:
 class Chat:
     def __init__(self, pretrained: str = 'resource/model/simcse-chinese-roberta-wwm-ext',
                  embedding_type: str = 'CLS', skip_pickle: bool = False):
-        self.model = Model(pretrained, embedding_type)
-        self.batch_size = 32
-
-        self.text_to_vector: {str, list} = {}
+        self.model: Model = Model(pretrained, embedding_type)
+        self.batch_size: int = 32
 
         self.skip_pickle: bool = skip_pickle
-        self.corpus_base_dir = 'resource/corpus'  # standard question directory
-        self.none_response = ChatResponse('', '嘤嘤嘤，这个问题我还不会', 0.0)
+        self.corpus_base_dir: str = 'resource/corpus'  # standard question directory
 
-        self.corpus: [(str, str, list)] = concatenate_lists([
-            self.load_corpus(os.path.join(self.corpus_base_dir, each))
+        self.none_knowledge: Knowledge = Knowledge('未命中', '嘤嘤嘤，这个问题我还不会')
+        self.none_response: ChatResponse = ChatResponse(self.none_knowledge, '', -1)
+
+        self.knowledge_list: [Knowledge] = concatenate_lists([
+            self.load_knowledge(os.path.join(self.corpus_base_dir, each))
             for each in os.listdir(self.corpus_base_dir) if each.endswith('.tsv')
         ])
 
-        self.knowledge_list: [Knowledge] = ...
-
-    def load_knowledge(self, path: str) -> [Knowledge]:
-        pass
-
-    def load_corpus(self, path: str) -> [(str, str, list)]:
+    def load_knowledge(self, path: str) -> ([Knowledge], {str, np.ndarray}):
         path_without_ext, ext = os.path.splitext(path)
         if ext != '.tsv':
             raise ValueError('File extension must be .tsv')
@@ -69,42 +67,42 @@ class Chat:
                 raise FileNotFoundError
             with open(pickle_path, 'rb') as f:
                 print('load corpus from %s' % pickle_path)
-                return pickle.load(f)
+                text_to_vector: {str, np.ndarray} = pickle.load(f)
         except FileNotFoundError:
-            result: [(str, str, list)] = []
-            with open(path) as f:
-                buffer_q: [str] = []
-                buffer_a: [str] = []
-                for line in f:
-                    q, a = line.strip().split('\t')
-                    buffer_q.append(q)
-                    buffer_a.append(a)
+            text_to_vector: {str, np.ndarray} = {}
 
-                buffer_v = self.model.embedding_batch(buffer_q)
-                for q, a, v in zip(buffer_q, buffer_a, buffer_v):
-                    result.append((q, a, v))
-            print('load corpus from %s' % path)
-            with open(pickle_path, 'wb') as f:
-                pickle.dump(result, f)
-            return result
+        knowledge_list: [Knowledge] = []
+        text_list: [str] = []
+        with open(path, encoding='gbk') as f:  # Excel 导出的文件是 GBK 编码
+            for line_numer, line in enumerate(f):
+                if line_numer == 0:  # 跳过列名
+                    continue
+                key, value, is_knowledge = line.strip().split('\t')
+                if int(is_knowledge):
+                    name, answer = key, value
+                    knowledge_list.append(Knowledge(name, answer))
+                else:
+                    question, threshold = key, float(value) if value != '' else 0.7
+                    knowledge_list[-1].question_list.append(Question(question, threshold))
+                    if question not in text_to_vector:
+                        text_list.append(question)
+        vector_list: [str] = self.model.embedding_batch(text_list)
+        for text, vector in zip(text_list, vector_list):
+            text_to_vector[text] = vector
+        print('load corpus from %s' % path)
+        with open(pickle_path, 'wb') as f:
+            pickle.dump(text_to_vector, f)
 
-    def cosine_similarity(self, text_vector: [float], knowledge: Knowledge) -> (float, str):
-        best_score = 0.0
-        best_question = ''
-        for question in knowledge.similar_question_list:
-            score = cosine_similarity(self.text_to_vector[question], text_vector)
-            if score > best_score:
-                best_question = question
-                best_score = score
+        for knowledge in knowledge_list:
+            for question in knowledge.question_list:
+                question.vector = text_to_vector[question.text]
+        return knowledge_list
 
-        return best_score, best_question
-
-    def reply(self, text: str, top_k: int = 3, threshold: float = 0.7) -> (ChatResponse, [ChatResponse]):
+    def reply(self, text: str) -> ChatResponse:
         vector = self.model.embedding(text)
-        cosine_similarity_list: [(float, str)] = [
-            self.cosine_similarity(vector, knowledge) for knowledge in self.knowledge_list]
-        sorted_index = sorted(range(len(self.knowledge_list)), key=lambda x: cosine_similarity_list[x][0], reverse=True)
-        response_list = [ChatResponse(question=cosine_similarity_list[i][1], answer=self.knowledge_list[i].answer,
-                                      score=cosine_similarity_list[i][0]) for i in sorted_index[:top_k]]
-        has_result = response_list[0].score >= threshold
-        return response_list[0] if has_result else self.none_response, response_list[has_result:]
+        match_result_list: [MatchResult] = [knowledge.match(vector) for knowledge in self.knowledge_list]
+        best_index: int = argmax(match_result_list, lambda x: x.score)
+        if match_result_list[best_index]:
+            return ChatResponse(self.knowledge_list[best_index],
+                                match_result_list[best_index].question, match_result_list[best_index].score)
+        return self.none_response

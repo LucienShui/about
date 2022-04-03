@@ -1,3 +1,5 @@
+from typing import Callable
+
 import numpy as np
 
 
@@ -15,12 +17,15 @@ def concatenate_lists(list_of_lists: [list]) -> list:
     return [item for sublist in list_of_lists for item in sublist]
 
 
-def argmax(array: list) -> int:
+def argmax(array: list, func: Callable = lambda x: x) -> int:
     """
     Return the index of the maximum value in a list.
     """
     index = -1
-    for i, value in enumerate(array):
-        if value > array[index]:
+    max_value = None
+    for i, each in enumerate(array):
+        value = func(each)
+        if max_value is None or value > max_value:
             index = i
+            max_value = value
     return index

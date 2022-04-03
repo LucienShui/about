@@ -54,27 +54,16 @@ class TestChat(unittest.TestCase):
         self.chat = Chat('resource/model/simcse-chinese-roberta-wwm-ext')
 
     def test_chat(self):
-        with open(os.path.join(self.chat.corpus_base_dir, 'test.tsv'), 'w') as f:
-            f.writelines([
-                '几点了\t',
-                '啥时候了\t',
-                '我饿了\t',
-                '我想看电视\t',
-                '今天天气怎么样\t',
-                '你是男生还是女生\t',
-                '你的名字是什么\t'
-            ])
+        response = self.chat.reply('你好')
+        print(response.json())
 
-    def test_reply(self):
+    def test_reply_input(self):
         while True:
             text = input()
             if text == 'exit':
                 break
-            response, response_list = self.chat.reply(text)
-            if response is None:
-                print('没有找到答案，猜你想问：', [each.question for each in response_list])
-            else:
-                print(response)
+            response = self.chat.reply(text)
+            print(response.json())
 
 
 if __name__ == '__main__':
