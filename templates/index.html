@@ -6,16 +6,17 @@
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 </head>
 <body>
-    <div>
-        <label for="text">文本：</label>
-        <input id="text">
-        <button onclick="submitText()">提交</button>
-    </div>
-    <div>
-        <p>标问：<a id="question"></a></p>
-        <p>答案：<a id="answer"></a></p>
-        <p>相似度：<a id="score"></a></p>
-    </div>
+<div>
+    <label for="text">文本：</label>
+    <input id="text">
+    <button onclick="submitText()">提交</button>
+    <button onclick="reload()">重载知识库</button>
+</div>
+<div>
+    <p>标问：<a id="question"></a></p>
+    <p>答案：<a id="answer"></a></p>
+    <p>相似度：<a id="score"></a></p>
+</div>
 </body>
 <script type="application/javascript">
     function post(url, data, func) {
@@ -24,6 +25,11 @@
         }).catch(error => {
             alert(JSON.stringify(error));
         })
+    }
+
+    function reload() {
+        post('/reload', {}, function (response) {
+        });
     }
 
     function submitText() {
