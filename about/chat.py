@@ -1,11 +1,10 @@
 import os
 import pickle
-from typing import Callable
 
 import numpy as np
 
 from .entity import Knowledge, Question, MatchResult
-from .func_set import now_date
+from .func_set import func_map
 from .model import Model
 from .tools import concatenate_lists, argmax
 
@@ -16,11 +15,6 @@ class ChatResponse:
         self.question = question
         self.score = score
 
-        self.func_map: {str, Callable} = {
-            func.__name__: func
-            for func in [now_date]
-        }
-
     def __str__(self):
         return self.answer
 
@@ -28,7 +22,7 @@ class ChatResponse:
     def answer(self):
         if self.knowledge.answer.startswith('func:'):
             func_name = self.knowledge.answer[len('func:'):]
-            return self.func_map[func_name]()
+            return func_map[func_name]()
         return self.knowledge.answer
 
     def json(self):
@@ -44,26 +38,23 @@ class Chat:
     def __init__(self, pretrained: str = 'resource/model/simcse-chinese-roberta-wwm-ext',
                  embedding_type: str = 'CLS', skip_pickle: bool = False):
         self.model: Model = Model(pretrained, embedding_type)
-        self.batch_size: int = 32
-
-        self.skip_pickle: bool = skip_pickle
         self.corpus_base_dir: str = 'resource/corpus'  # standard question directory
+        self.none_response: ChatResponse = ChatResponse(Knowledge('未命中', '嘤嘤嘤，这个问题我还不会'), '', -1)
+        self.knowledge_list: [Knowledge] = self.load_knowledge(self.corpus_base_dir, skip_pickle)
 
-        self.none_knowledge: Knowledge = Knowledge('未命中', '嘤嘤嘤，这个问题我还不会')
-        self.none_response: ChatResponse = ChatResponse(self.none_knowledge, '', -1)
-
-        self.knowledge_list: [Knowledge] = concatenate_lists([
-            self.load_knowledge(os.path.join(self.corpus_base_dir, each))
-            for each in os.listdir(self.corpus_base_dir) if each.endswith('.tsv')
+    def load_knowledge(self, base_dir: str, skip_pickle: bool = False) -> [Knowledge]:
+        return concatenate_lists([
+            self.__load_knowledge(os.path.join(base_dir, each), skip_pickle)
+            for each in os.listdir(base_dir) if each.endswith('.tsv')
         ])
 
-    def load_knowledge(self, path: str) -> ([Knowledge], {str, np.ndarray}):
+    def __load_knowledge(self, path: str, skip_pickle: bool = False) -> ([Knowledge], {str, np.ndarray}):
         path_without_ext, ext = os.path.splitext(path)
         if ext != '.tsv':
             raise ValueError('File extension must be .tsv')
         pickle_path: str = path_without_ext + '.pkl'
         try:
-            if self.skip_pickle:
+            if skip_pickle:
                 raise FileNotFoundError
             with open(pickle_path, 'rb') as f:
                 print('load corpus from %s' % pickle_path)
