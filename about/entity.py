@@ -20,10 +20,10 @@ class Question(object):
 
 
 class Knowledge(object):
-    def __init__(self, name: str, answer: str, question_list: [Question] = None):
+    def __init__(self, name: str, answer_list: [str], question_list: [Question] = None):
         self.name: str = name
         self.question_list: [Question] = question_list or []
-        self.answer: str = answer
+        self.answer_list: [str] = answer_list
 
     def match(self, vector: np.ndarray) -> MatchResult:
         best_question = ''

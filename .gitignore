@@ -136,3 +136,6 @@ dmypy.json
 
 # resource
 resource
+
+# data
+*.db

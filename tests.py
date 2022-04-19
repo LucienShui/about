@@ -1,7 +1,13 @@
-import os
 import unittest
 
 import numpy as np
+
+
+class TestORM(unittest.TestCase):
+    def test_init(self):
+        from about.orm import Record
+        record = Record(query="你好", answer="世界", hit_question="标问", score=0.5, knowledge_name="知识", ip="127.0.0.1")
+        record.save()
 
 
 class TestModel(unittest.TestCase):
@@ -54,7 +60,7 @@ class TestChat(unittest.TestCase):
         self.chat = Chat('resource/model/simcse-chinese-roberta-wwm-ext')
 
     def test_chat(self):
-        response = self.chat.reply('你好')
+        response = self.chat.reply('你叫什么')
         print(response.json())
 
     def test_reply_input(self):

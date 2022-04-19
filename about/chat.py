@@ -1,5 +1,7 @@
+import json
 import os
 import pickle
+import random
 
 import numpy as np
 
@@ -20,10 +22,11 @@ class ChatResponse:
 
     @property
     def answer(self):
-        if self.knowledge.answer.startswith('func:'):
-            func_name = self.knowledge.answer[len('func:'):]
+        random_answer: str = random.choice(self.knowledge.answer_list)
+        if random_answer.startswith('func:'):
+            func_name = random_answer[len('func:'):]
             return func_map[func_name]()
-        return self.knowledge.answer
+        return random_answer
 
     def json(self):
         return {
@@ -37,21 +40,29 @@ class ChatResponse:
 class Chat:
     def __init__(self, pretrained: str = 'resource/model/simcse-chinese-roberta-wwm-ext',
                  embedding_type: str = 'CLS', skip_pickle: bool = False):
+        self.supported_ext: [str] = ['.tsv', '.json']
+
         self.model: Model = Model(pretrained, embedding_type)
         self.corpus_base_dir: str = 'resource/corpus'  # standard question directory
-        self.none_response: ChatResponse = ChatResponse(Knowledge('未命中', '嘤嘤嘤，这个问题我还不会'), '', -1)
+        self.none_response: ChatResponse = ChatResponse(Knowledge('未命中', ['嘤嘤嘤，这个问题我还不会']), '', -1)
         self.knowledge_list: [Knowledge] = self.load_knowledge(self.corpus_base_dir, skip_pickle)
+
+    def is_ext_supported(self, path: str) -> bool:
+        for ext in self.supported_ext:
+            if path.endswith(ext):
+                return True
+        return False
 
     def load_knowledge(self, base_dir: str, skip_pickle: bool = False) -> [Knowledge]:
         return concatenate_lists([
             self.__load_knowledge(os.path.join(base_dir, each), skip_pickle)
-            for each in os.listdir(base_dir) if each.endswith('.tsv')
+            for each in os.listdir(base_dir) if self.is_ext_supported(each)
         ])
 
     def __load_knowledge(self, path: str, skip_pickle: bool = False) -> ([Knowledge], {str, np.ndarray}):
         path_without_ext, ext = os.path.splitext(path)
-        if ext != '.tsv':
-            raise ValueError('File extension must be .tsv')
+        if ext not in self.supported_ext:
+            raise ValueError('File extension must be .tsv or .json')
         pickle_path: str = path_without_ext + '.pkl'
         try:
             if skip_pickle:
@@ -64,19 +75,44 @@ class Chat:
 
         knowledge_list: [Knowledge] = []
         text_list: [str] = []
-        with open(path, encoding='gbk') as f:  # Excel 导出的文件是 GBK 编码
-            for line_numer, line in enumerate(f):
-                if line_numer == 0:  # 跳过列名
-                    continue
-                key, value, is_knowledge = line.strip().split('\t')
-                if int(is_knowledge):
-                    name, answer = key, value
-                    knowledge_list.append(Knowledge(name, answer))
-                else:
-                    question, threshold = key, float(value) if value != '' else 0.7
-                    knowledge_list[-1].question_list.append(Question(question, threshold))
-                    if question not in text_to_vector:
-                        text_list.append(question)
+        if ext == '.tsv':
+            with open(path, encoding='gbk') as f:  # Excel 导出的文件是 GBK 编码
+                for line_numer, line in enumerate(f):
+                    if line_numer == 0:  # 跳过列名
+                        continue
+                    key, value, is_knowledge = line.strip().split('\t')
+                    if int(is_knowledge):
+                        name, answer = key, value
+                        knowledge_list.append(Knowledge(name, [answer]))
+                    else:
+                        question, threshold = key, float(value) if value != '' else 0.7
+                        knowledge_list[-1].question_list.append(Question(question, threshold))
+        elif ext == '.json':
+            with open(path, encoding='utf-8') as f:
+                data: dict = json.load(f)
+                for name, value in data.items():
+                    question_list: list = value['question_list']
+                    answer_list: list = value['answer_list']
+
+                    knowledge = Knowledge(name, answer_list)
+
+                    for each in question_list:
+                        if isinstance(each, str):
+                            knowledge.question_list.append(Question(each, 0.7))
+                        elif (isinstance(each, tuple) or isinstance(each, list)) and len(each) == 2:
+                            question, threshold = each
+                            knowledge.question_list.append(Question(question, threshold))
+                        else:
+                            raise ValueError('question_list must be list of str or list of tuple')
+
+                    knowledge_list.append(knowledge)
+
+        for knowledge in knowledge_list:
+            for question in knowledge.question_list:
+                text = question.text
+                if text not in text_to_vector:
+                    text_list.append(text)
+
         vector_list: [str] = self.model.embedding_batch(text_list)
         for text, vector in zip(text_list, vector_list):
             text_to_vector[text] = vector
