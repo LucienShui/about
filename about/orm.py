@@ -1,7 +1,7 @@
-from peewee import Model, SqliteDatabase, AutoField, DateTimeField, TextField, CharField, DoubleField
+from peewee import Model, MySQLDatabase, AutoField, DateTimeField, TextField, CharField, DoubleField
 from datetime import datetime
 
-db = SqliteDatabase('sqlite.db')
+db = MySQLDatabase('database', user='username', passwd='password', host='localhost')
 
 
 class BaseModel(Model):
