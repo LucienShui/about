@@ -1,4 +1,5 @@
 from typing import Callable
+from uuid import uuid1
 
 import numpy as np
 
@@ -29,3 +30,10 @@ def argmax(array: list, func: Callable = lambda x: x) -> int:
             index = i
             max_value = value
     return index
+
+
+def trace_id() -> str:
+    """
+    Generate a trace id.
+    """
+    return str(uuid1()).replace('-', '')

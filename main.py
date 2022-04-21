@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify, Response, render_template
 
 from about.chat import Chat, ChatResponse
+from about.orm import Trace
 
 bot = Chat()
 app = Flask(__name__)
@@ -21,7 +22,10 @@ def reload() -> Response:
 def chat() -> Response:
     text = request.json['text']
     response: ChatResponse = bot.reply(text)
-    return jsonify(response.json())
+    json_response: dict = response.json()
+    ip = request.headers.get('X-Real-IP', request.remote_addr)
+    Trace.create(module='chat', input={'text': text}, output=json_response, ip=ip)
+    return jsonify(json_response)
 
 
 def main():

@@ -5,9 +5,8 @@ import numpy as np
 
 class TestORM(unittest.TestCase):
     def test_init(self):
-        from about.orm import Record
-        record = Record(query="你好", answer="世界", hit_question="标问", score=0.5, knowledge_name="知识", ip="127.0.0.1")
-        record.save()
+        from about.orm import Trace
+        Trace.create(ip="127.0.0.1")
 
 
 class TestModel(unittest.TestCase):
