@@ -1,0 +1,10 @@
+{
+    "database": {
+        "type": "mysql",
+        "mysql-host": "localhost",
+        "mysql-username": "username",
+        "mysql-password": "password",
+        "mysql-database": "database",
+        "sqlite-file": "sqlite.db"
+    }
+}

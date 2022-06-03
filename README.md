@@ -25,6 +25,10 @@
 }
 ```
 
+#### 复杂答案
+
+当答案内容为 `func:foo_bar` 格式时，会从 [about/func_set.py](./about/func_set.py) 中寻找并执行名为 `foo_bar` 的函数，目前不支持参数传入。
+
 ## 运行
 
 ```bash

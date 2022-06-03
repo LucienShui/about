@@ -1,9 +1,19 @@
-from peewee import Model, MySQLDatabase, AutoField, DateTimeField, TextField, CharField
+from peewee import Model, MySQLDatabase, SqliteDatabase, AutoField, DateTimeField, TextField, CharField
 import json
 from datetime import datetime
 from .tools import trace_id
 
-db = MySQLDatabase('database', user='username', passwd='password', host='localhost')
+
+with open('config.json') as file:
+    config: dict = json.load(file)
+    database_config: dict = config['database']
+    if database_config.get('type', 'mysql') == 'mysql':
+        db = MySQLDatabase(
+            database_config['mysql-database'], user=database_config['mysql-username'],
+            passwd=database_config['mysql-password'], host=database_config['mysql-host']
+        )
+    else:
+        db = SqliteDatabase(database_config['sqlite-file'])
 
 
 class BaseModel(Model):

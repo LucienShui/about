@@ -139,3 +139,5 @@ resource
 
 # data
 *.db
+mysql
+config.json
