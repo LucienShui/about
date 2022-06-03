@@ -8,10 +8,15 @@
 文本相似度模型采用 [SimCSE](https://arxiv.org/abs/2104.08821)
 ，预训练模型来自 [Hugging Face](https://huggingface.co/cyclone/simcse-chinese-roberta-wwm-ext)。
 
+## 部署
+
+> 由于 Hugging Face 的下载需要用 git lfs，第一次配置起来稍微有些成本，所以我自己缓存了一份模型文件 [simcse-chinese-roberta-wwm-ext.tar.gz](https://drive.google.com/file/d/1czNfE18JDrlH8bbPNrc7JWVu3a3oJ32m/view?usp=sharing)。
+
+需要先将模型放在 `resource/model` 目录下，然后执行 `docker-compose up -d` 即可。
+
 ### 知识库格式
 
-当命中某个标问时，会判定为命中为本条知识，并返回答案，当答案有多个时，会随机返回一个。
-
+当命中某个标问时，会判定为命中为本条知识，并返回答案，当答案有多个时，会随机返回一个。  
 目录 `resource/knowledge` 下的任何 `.json` 后缀都会被尝试加载进知识库，格式如下。
 
 ```json

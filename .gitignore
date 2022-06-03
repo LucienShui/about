@@ -135,7 +135,15 @@ dmypy.json
 .idea
 
 # resource
-resource
+resource/*
+
+!resource/knowledge/
+resource/knowledge/*
+!resource/knowledge/example.json
+
+!resource/model/
+resource/model/*
+!resource/model/README.md
 
 # data
 *.db

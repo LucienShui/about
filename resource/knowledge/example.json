@@ -1,0 +1,10 @@
+{
+    "报数": {
+        "question_list": ["报个数", "测试"],
+        "answer_list": ["1", "2", "3"]
+    },
+    "时间": {
+        "question_list": ["现在几点了"],
+        "answer_list": ["func:now_date"]
+    }
+}
