@@ -14,7 +14,7 @@ def home():
 
 @app.route('/reload', methods=['POST'])
 def reload() -> Response:
-    bot.knowledge_list = bot.load_knowledge(bot.corpus_base_dir)
+    bot.knowledge_list = bot.load_knowledge(bot.knowledge_base_dir)
     return jsonify({'code': 200})
 
 

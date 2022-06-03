@@ -8,4 +8,4 @@ def now_date() -> str:
 
 
 func_list: [Callable] = [now_date]
-func_map: {str, Callable} = {func.__name__: func for func in [func_list]}
+func_map: {str, Callable} = {func.__name__: func for func in func_list}

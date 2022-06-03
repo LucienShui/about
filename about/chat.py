@@ -43,9 +43,9 @@ class Chat:
         self.supported_ext: [str] = ['.tsv', '.json']
 
         self.model: Model = Model(pretrained, embedding_type)
-        self.corpus_base_dir: str = 'resource/corpus'  # standard question directory
+        self.knowledge_base_dir: str = 'resource/knowledge'  # standard question directory
         self.none_response: ChatResponse = ChatResponse(Knowledge('未命中', ['嘤嘤嘤，这个问题我还不会']), '', -1)
-        self.knowledge_list: [Knowledge] = self.load_knowledge(self.corpus_base_dir, skip_pickle)
+        self.knowledge_list: [Knowledge] = self.load_knowledge(self.knowledge_base_dir, skip_pickle)
 
     def is_ext_supported(self, path: str) -> bool:
         for ext in self.supported_ext:
@@ -68,7 +68,7 @@ class Chat:
             if skip_pickle:
                 raise FileNotFoundError
             with open(pickle_path, 'rb') as f:
-                print('load corpus from %s' % pickle_path)
+                print('load knowledge from %s' % pickle_path)
                 text_to_vector: {str, np.ndarray} = pickle.load(f)
         except FileNotFoundError:
             text_to_vector: {str, np.ndarray} = {}
@@ -116,7 +116,7 @@ class Chat:
         vector_list: [str] = self.model.embedding_batch(text_list)
         for text, vector in zip(text_list, vector_list):
             text_to_vector[text] = vector
-        print('load corpus from %s' % path)
+        print('load knowledge from %s' % path)
         with open(pickle_path, 'wb') as f:
             pickle.dump(text_to_vector, f)
 
