@@ -1,0 +1,19 @@
+version: "3"
+
+services:
+  about:
+    build: .
+    image: about-runtime:latest
+    container_name: about
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "ps | grep -v grep | grep python"]
+      interval: 45s
+      timeout: 3s
+      retries: 3
+    ports:
+      - 3000:3000
+    environment:
+      - TZ=Asia/Shanghai
+    volumes:
+      - .:/app

@@ -1,4 +1,6 @@
 FROM python:3.9
 COPY requirements.txt /requirements.txt
-RUN pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/ && \
-	pip install -r /requirements.txt
+RUN pip install -i https://mirrors.aliyun.com/pypi/simple/ -r /requirements.txt
+WORKDIR /app
+
+CMD ["python", "main.py"]
