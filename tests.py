@@ -56,20 +56,30 @@ class TestORM(unittest.TestCase):
 class TestRawModel(unittest.TestCase):
     def test_raw_model(self):
         from transformers import AutoModel, AutoTokenizer
-        from about.model import ModelV2
+        from about.model import ModelV2, ModelV3
         pretrained: str = 'resource/model/simcse-chinese-roberta-wwm-ext'
         model: AutoModel = AutoModel.from_pretrained(pretrained)
         tokenizer: AutoTokenizer = AutoTokenizer.from_pretrained(pretrained)
         text: str = 'Hello World!'
         token = tokenizer([text], return_tensors='pt')
-        print(token.keys())
         prediction = model(**token)
-        embedding = prediction.last_hidden_state.detach().numpy().mean(axis=1)
-        print(embedding)
+        embedding = prediction.last_hidden_state.detach().numpy()[:, 1:].mean(axis=1)[0]
+        # print(embedding[:10])
 
         model_v2 = ModelV2(pretrained)
         embedding_v2 = model_v2.embedding(text)
-        print(embedding_v2)
+        # print(embedding_v2[:10])
+
+        model_v3 = ModelV3(pretrained, skip_cls=True)
+        embedding_v3_1 = model_v3.embedding(text)
+        # print(embedding_v3_1[:10])
+
+        self.assertTrue(np.isclose(embedding, embedding_v3_1).all())
+
+        model_v3.skip_cls = False
+        embedding_v3_2 = model_v3.embedding(text)
+        # print(embedding_v3_2[:10])
+        self.assertTrue(np.isclose(embedding_v2, embedding_v3_2).all())
 
         self.assertTrue(True)
 
