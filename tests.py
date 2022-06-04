@@ -3,10 +3,75 @@ import unittest
 import numpy as np
 
 
+from typing import Mapping, List
+from transformers.onnx import OnnxConfig
+from collections import OrderedDict
+
+
+class CustomOnnxConfig(OnnxConfig):
+    @property
+    def inputs(self) -> Mapping[str, Mapping[int, str]]:
+        return OrderedDict(
+            [
+                ("input_ids", {0: "batch", 1: "sequence"}),
+                ("attention_mask", {0: "batch", 1: "sequence"}),
+                ("token_type_ids", {0: "batch", 1: "sequence"}),
+            ]
+        )
+    
+    @property
+    def outputs(self) -> Mapping[str, Mapping[int, str]]:
+        return OrderedDict(
+            [
+                ("last_hidden_state", {0: "batch", 1: "sequence"}),
+                # ("pooler_output", {0: "batch", 1: "sequence"}),
+            ]
+        )
+
+
+class ExportONNX(unittest.TestCase):
+    def test_export_onnx(self):
+        from pathlib import Path
+        from transformers.onnx import export
+        from transformers import AutoTokenizer, AutoModel
+
+        pretrained: str = 'resource/model/simcse-chinese-roberta-wwm-ext'
+
+        
+        model = AutoModel.from_pretrained(pretrained)
+        tokenizer = AutoTokenizer.from_pretrained(pretrained)
+
+        onnx_path = Path("model.onnx")
+        onnx_config = CustomOnnxConfig(model.config)
+
+        onnx_inputs, onnx_outputs = export(tokenizer, model, onnx_config, onnx_config.default_onnx_opset, onnx_path)
+
+
 class TestORM(unittest.TestCase):
     def test_init(self):
         from about.orm import Trace
         Trace.create(ip="127.0.0.1")
+
+
+class TestRawModel(unittest.TestCase):
+    def test_raw_model(self):
+        from transformers import AutoModel, AutoTokenizer
+        from about.model import ModelV2
+        pretrained: str = 'resource/model/simcse-chinese-roberta-wwm-ext'
+        model: AutoModel = AutoModel.from_pretrained(pretrained)
+        tokenizer: AutoTokenizer = AutoTokenizer.from_pretrained(pretrained)
+        text: str = 'Hello World!'
+        token = tokenizer([text], return_tensors='pt')
+        print(token.keys())
+        prediction = model(**token)
+        embedding = prediction.last_hidden_state.detach().numpy().mean(axis=1)
+        print(embedding)
+
+        model_v2 = ModelV2(pretrained)
+        embedding_v2 = model_v2.embedding(text)
+        print(embedding_v2)
+
+        self.assertTrue(True)
 
 
 class TestModel(unittest.TestCase):
@@ -24,7 +89,7 @@ class TestModel(unittest.TestCase):
     def test_recall(self):
         from about.tools import cosine_similarity
 
-        candidate_text: [str] = [
+        candidate_text: List[str] = [
             '几点了',
             '啥时候了',
             '我饿了',
@@ -33,7 +98,7 @@ class TestModel(unittest.TestCase):
             '你是男生还是女生'
         ]
 
-        candidate_vector: [np.ndarray] = self.model.embedding_batch(candidate_text)
+        candidate_vector: List[np.ndarray] = self.model.embedding_batch(candidate_text)
 
         result = self.model.embedding('现在几点了')
         for text, vector in zip(candidate_text, candidate_vector):

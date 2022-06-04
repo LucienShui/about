@@ -5,6 +5,7 @@ from sentence_transformers import SentenceTransformer
 from tqdm import tqdm
 from transformers import AlbertModel, BertTokenizerFast
 from transformers.modeling_outputs import BaseModelOutputWithPooling
+from typing import List
 
 tqdm = partial(tqdm, position=0, leave=True)  # tqdm 同行进度条
 
@@ -17,7 +18,7 @@ class SentenceEmbedding(object):
     def embedding(self, text: str) -> np.ndarray:
         raise NotImplementedError
 
-    def embedding_batch(self, text_list: [str]) -> np.ndarray:
+    def embedding_batch(self, text_list: List[str]) -> np.ndarray:
         raise NotImplementedError
 
 
@@ -41,9 +42,9 @@ class ModelV1(SentenceEmbedding):
 
         print('load finished')
 
-    def predict_batch(self, text_list: [str], batch_size: int = 32, show_progress_bar: bool = False) -> dict:
-        last_hidden_state_list: [np.ndarray] = []
-        pooler_output_list: [np.ndarray] = []
+    def predict_batch(self, text_list: List[str], batch_size: int = 32, show_progress_bar: bool = False) -> dict:
+        last_hidden_state_list: List[np.ndarray] = []
+        pooler_output_list: List[np.ndarray] = []
 
         with torch.no_grad():
             rg = range(0, len(text_list), batch_size)
@@ -70,7 +71,7 @@ class ModelV1(SentenceEmbedding):
             result[key] = result[key][0]
         return result
 
-    def embedding_batch(self, text_list: [str], batch_size: int = 32, show_progress_bar: bool = False) -> np.ndarray:
+    def embedding_batch(self, text_list: List[str], batch_size: int = 32, show_progress_bar: bool = False) -> np.ndarray:
         predict_result = self.predict_batch(text_list, batch_size, show_progress_bar)
         if self.embedding_type == 'CLS':
             return predict_result['pooler_output']
@@ -99,7 +100,21 @@ class ModelV2(SentenceEmbedding):
     def embedding(self, text: str) -> np.ndarray:
         return self.embedding_batch([text])[0]
 
-    def embedding_batch(self, text_list: [str]) -> np.ndarray:
+    def embedding_batch(self, text_list: List[str]) -> np.ndarray:
+        sentence_embeddings = self.encoder.encode(text_list)
+        return sentence_embeddings
+
+
+class ModelV3(SentenceEmbedding):
+    def __init__(self, pretrained: str, embedding_type: str = 'CLS'):
+        self.embedding_type = embedding_type
+        self.pretrained = pretrained
+        self.encoder = SentenceTransformer(self.pretrained)
+
+    def embedding(self, text: str) -> np.ndarray:
+        return self.embedding_batch([text])[0]
+
+    def embedding_batch(self, text_list: List[str]) -> np.ndarray:
         sentence_embeddings = self.encoder.encode(text_list)
         return sentence_embeddings
 
