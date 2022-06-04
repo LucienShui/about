@@ -22,7 +22,8 @@ class SentenceEmbedding(object):
 
 
 class ModelV1(SentenceEmbedding):
-    def __init__(self, pretrained: str, embedding_type: str = 'CLS', skip_cls: bool = False, max_length: int = 128):
+    def __init__(self, pretrained: str, embedding_type: str = 'CLS',
+                 skip_cls: bool = False, max_length: int = 128, skip_load_model: bool = False):
         self.embedding_type = embedding_type
         self.skip_cls = skip_cls  # skip_cls or not when calc with last_hidden_state
         self.max_length = max_length
@@ -33,6 +34,9 @@ class ModelV1(SentenceEmbedding):
 
         self.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
+        if skip_load_model:
+            return
+
         self.tokenizer: BertTokenizerFast = BertTokenizerFast.from_pretrained(self.pretrained)
         self.model: Module = AlbertModel.from_pretrained(self.pretrained)
         self.model.to(device=self.device)
@@ -41,26 +45,35 @@ class ModelV1(SentenceEmbedding):
 
         print('load finished')
 
+    def _predict_batch(self, text_list: List[str]) -> np.ndarray:
+        if self.max_length > 0:
+            encoded_ids = self.tokenizer(text_list, padding='max_length', truncation=True,
+                                        max_length=self.max_length, return_tensors="pt")
+        else:
+            encoded_ids = self.tokenizer(text_list, return_tensors="pt")
+        inputs = {k: v.to(self.device) for k, v in encoded_ids.items()}
+
+        with torch.no_grad():
+            huggingface_prediction = self.model(**inputs)
+
+        return {
+            "last_hidden_state": huggingface_prediction.last_hidden_state.cpu().numpy(),
+            "pooler_output": huggingface_prediction.pooler_output.cpu().numpy()
+        }
+
     def predict_batch(self, text_list: List[str], batch_size: int = 32, show_progress_bar: bool = False) -> dict:
         last_hidden_state_list: List[np.ndarray] = []
         pooler_output_list: List[np.ndarray] = []
 
-        with torch.no_grad():
-            rg = range(0, len(text_list), batch_size)
-            if show_progress_bar:
-                rg = tqdm(rg)
-            for i in rg:
-                text_batch = text_list[i:i + batch_size]
-                if self.max_length > 0:
-                    encoded_ids = self.tokenizer(text_batch, padding='max_length', truncation=True,
-                                                max_length=self.max_length, return_tensors="pt")
-                else:
-                    encoded_ids = self.tokenizer(text_batch, return_tensors="pt")
-                inputs = {k: v.to(self.device) for k, v in encoded_ids.items()}
-                huggingface_prediction = self.model(**inputs)
+        rg = range(0, len(text_list), batch_size)
+        if show_progress_bar:
+            rg = tqdm(rg)
+        for i in rg:
+            text_batch = text_list[i:i + batch_size]
+            prediction = self._predict_batch(text_batch)
 
-                pooler_output_list.append(huggingface_prediction.pooler_output.cpu().numpy())
-                last_hidden_state_list.append(huggingface_prediction.last_hidden_state.cpu().numpy())
+            last_hidden_state_list.append(prediction['last_hidden_state'])
+            pooler_output_list.append(prediction['pooler_output'])
 
         last_hidden_state: np.ndarray = np.concatenate(last_hidden_state_list, axis=0)
         pooler_output: np.ndarray = np.concatenate(pooler_output_list, axis=0)
@@ -94,7 +107,7 @@ class ModelV1(SentenceEmbedding):
 
 
 class ModelV2(SentenceEmbedding):
-    def __init__(self, pretrained: str):
+    def __init__(self, pretrained: str, _: str = 'MEAN'):
         self.pretrained = pretrained
         self.encoder = SentenceTransformer(self.pretrained)
 
@@ -110,15 +123,7 @@ class ModelV3(ModelV1):
     def __init__(self, pretrained: str, embedding_type: str = 'MEAN', skip_cls: bool = False, max_length: int = 0):
         from transformers import AutoTokenizer, AutoModel
         
-        self.embedding_type = embedding_type
-        self.skip_cls = skip_cls  # skip_cls or not when calc with last_hidden_state
-        self.max_length = max_length
-        self.pretrained = pretrained
-
-        if self.embedding_type not in ['CLS', 'MEAN', 'MAX', 'MIN', 'AVG']:
-            raise ValueError('self.embedding_type must be one of "CLS", "MEAN", "MAX", "MIN", "AVG"')
-
-        self.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+        super(ModelV3, self).__init__(pretrained, embedding_type, skip_cls, max_length, skip_load_model=True)
 
         self.tokenizer: AutoTokenizer = AutoTokenizer.from_pretrained(self.pretrained)
         self.model: AutoModel = AutoModel.from_pretrained(self.pretrained)
@@ -127,5 +132,29 @@ class ModelV3(ModelV1):
         self.model.eval()
 
         print('load finished')
+
+
+class OnnxModel(ModelV1):
+    def __init__(self, pretrained: str, embedding_type: str = 'MEAN', skip_cls: bool = False, max_length: int = 0):
+        from onnxruntime import InferenceSession
+        from transformers import AutoTokenizer
+        import os
+
+        super(OnnxModel, self).__init__(pretrained, embedding_type, skip_cls, max_length, skip_load_model=True)
+
+        self.pretrained = pretrained
+        self.tokenizer: AutoTokenizer = AutoTokenizer.from_pretrained(self.pretrained)
+        self.model: InferenceSession = InferenceSession(os.path.join(self.pretrained, 'model.onnx'))
+
+    def _predict_batch(self, text_list: List[str]) -> np.ndarray:
+        if self.max_length > 0:
+            encoded_ids = self.tokenizer(text_list, padding='max_length', truncation=True,
+                                        max_length=self.max_length, return_tensors="np")
+        else:
+            encoded_ids = self.tokenizer(text_list, return_tensors="np")
+
+        outputs = self.model.run(output_names=['last_hidden_state', 'pooler_output'], input_feed=dict(encoded_ids))
+        return {"last_hidden_state": outputs[0], "pooler_output": outputs[1]}
+
 
 Model = ModelV2

@@ -5,6 +5,8 @@ import random
 
 import numpy as np
 
+from typing import Dict, List, Tuple
+
 from .entity import Knowledge, Question, MatchResult
 from .func_set import func_map
 from .model import Model
@@ -40,12 +42,12 @@ class ChatResponse:
 class Chat:
     def __init__(self, pretrained: str = 'resource/model/simcse-chinese-roberta-wwm-ext',
                  embedding_type: str = 'CLS', skip_pickle: bool = False):
-        self.supported_ext: [str] = ['.tsv', '.json']
+        self.supported_ext: List[str] = ['.tsv', '.json']
 
         self.model: Model = Model(pretrained, embedding_type)
         self.knowledge_base_dir: str = 'resource/knowledge'  # standard question directory
         self.none_response: ChatResponse = ChatResponse(Knowledge('未命中', ['嘤嘤嘤，这个问题我还不会']), '', -1)
-        self.knowledge_list: [Knowledge] = self.load_knowledge(self.knowledge_base_dir, skip_pickle)
+        self.knowledge_list: List[Knowledge] = self.load_knowledge(self.knowledge_base_dir, skip_pickle)
 
     def is_ext_supported(self, path: str) -> bool:
         for ext in self.supported_ext:
@@ -53,13 +55,13 @@ class Chat:
                 return True
         return False
 
-    def load_knowledge(self, base_dir: str, skip_pickle: bool = False) -> [Knowledge]:
+    def load_knowledge(self, base_dir: str, skip_pickle: bool = False) -> List[Knowledge]:
         return concatenate_lists([
             self.__load_knowledge(os.path.join(base_dir, each), skip_pickle)
             for each in os.listdir(base_dir) if self.is_ext_supported(each)
         ])
 
-    def __load_knowledge(self, path: str, skip_pickle: bool = False) -> ([Knowledge], {str, np.ndarray}):
+    def __load_knowledge(self, path: str, skip_pickle: bool = False) -> Tuple[List[Knowledge], Dict[str, np.ndarray]]:
         path_without_ext, ext = os.path.splitext(path)
         if ext not in self.supported_ext:
             raise ValueError('File extension must be .tsv or .json')
@@ -69,12 +71,12 @@ class Chat:
                 raise FileNotFoundError
             with open(pickle_path, 'rb') as f:
                 print('load knowledge from %s' % pickle_path)
-                text_to_vector: {str, np.ndarray} = pickle.load(f)
+                text_to_vector: Dict[str, np.ndarray] = pickle.load(f)
         except FileNotFoundError:
-            text_to_vector: {str, np.ndarray} = {}
+            text_to_vector: Dict[str, np.ndarray] = {}
 
-        knowledge_list: [Knowledge] = []
-        text_list: [str] = []
+        knowledge_list: List[Knowledge] = []
+        text_list: List[str] = []
         if ext == '.tsv':
             with open(path, encoding='gbk') as f:  # Excel 导出的文件是 GBK 编码
                 for line_numer, line in enumerate(f):
@@ -113,7 +115,7 @@ class Chat:
                 if text not in text_to_vector:
                     text_list.append(text)
 
-        vector_list: [str] = self.model.embedding_batch(text_list)
+        vector_list: List[str] = self.model.embedding_batch(text_list)
         for text, vector in zip(text_list, vector_list):
             text_to_vector[text] = vector
         print('load knowledge from %s' % path)
@@ -127,7 +129,7 @@ class Chat:
 
     def reply(self, text: str) -> ChatResponse:
         vector = self.model.embedding(text)
-        match_result_list: [MatchResult] = [knowledge.match(vector) for knowledge in self.knowledge_list]
+        match_result_list: List[MatchResult] = [knowledge.match(vector) for knowledge in self.knowledge_list]
         best_index: int = argmax(match_result_list, lambda x: x.score)
         if match_result_list[best_index]:
             return ChatResponse(self.knowledge_list[best_index],

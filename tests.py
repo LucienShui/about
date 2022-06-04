@@ -24,7 +24,7 @@ class CustomOnnxConfig(OnnxConfig):
         return OrderedDict(
             [
                 ("last_hidden_state", {0: "batch", 1: "sequence"}),
-                # ("pooler_output", {0: "batch", 1: "sequence"}),
+                ("pooler_output", {0: "batch", 1: "sequence"}),
             ]
         )
 
@@ -41,7 +41,7 @@ class ExportONNX(unittest.TestCase):
         model = AutoModel.from_pretrained(pretrained)
         tokenizer = AutoTokenizer.from_pretrained(pretrained)
 
-        onnx_path = Path("model.onnx")
+        onnx_path = Path(pretrained) / 'model.onnx'
         onnx_config = CustomOnnxConfig(model.config)
 
         onnx_inputs, onnx_outputs = export(tokenizer, model, onnx_config, onnx_config.default_onnx_opset, onnx_path)
@@ -56,7 +56,7 @@ class TestORM(unittest.TestCase):
 class TestRawModel(unittest.TestCase):
     def test_raw_model(self):
         from transformers import AutoModel, AutoTokenizer
-        from about.model import ModelV2, ModelV3
+        from about.model import ModelV2, ModelV3, OnnxModel
         pretrained: str = 'resource/model/simcse-chinese-roberta-wwm-ext'
         model: AutoModel = AutoModel.from_pretrained(pretrained)
         tokenizer: AutoTokenizer = AutoTokenizer.from_pretrained(pretrained)
@@ -81,7 +81,10 @@ class TestRawModel(unittest.TestCase):
         # print(embedding_v3_2[:10])
         self.assertTrue(np.isclose(embedding_v2, embedding_v3_2).all())
 
-        self.assertTrue(True)
+        onnx_model = OnnxModel(pretrained)
+        embedding_onnx = onnx_model.embedding(text)
+        # print(embedding_onnx[:10])
+        self.assertTrue((np.abs(embedding_onnx - embedding_v3_2) < 1e-5).all())
 
 
 class TestModel(unittest.TestCase):
