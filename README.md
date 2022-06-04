@@ -14,6 +14,10 @@
 
 需要先将模型放在 `resource/model` 目录下，然后执行 `docker-compose up -d` 即可。
 
+### ONNX 格式的模型
+
+[simcse-chinese-roberta-wwm-ext-onnx.tar.gz](https://drive.google.com/file/d/1--K8hdOL5rAxU6O6Tabaone_Xt5o6xOa/view?usp=sharing)
+
 ### 知识库格式
 
 当命中某个标问时，会判定为命中为本条知识，并返回答案，当答案有多个时，会随机返回一个。  

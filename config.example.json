@@ -1,6 +1,6 @@
 {
     "database": {
-        "type": "mysql",
+        "type": "sqlite",
         "mysql-host": "localhost",
         "mysql-username": "username",
         "mysql-password": "password",

@@ -41,7 +41,7 @@ class ChatResponse:
 
 class Chat:
     def __init__(self, pretrained: str = 'resource/model/simcse-chinese-roberta-wwm-ext',
-                 embedding_type: str = 'CLS', skip_pickle: bool = False):
+                 embedding_type: str = 'MEAN', skip_pickle: bool = False):
         self.supported_ext: List[str] = ['.tsv', '.json']
 
         self.model: Model = Model(pretrained, embedding_type)

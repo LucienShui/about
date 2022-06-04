@@ -1,16 +1,13 @@
 import numpy as np
-import torch
 from functools import partial  # tqdm 同行进度条
-from sentence_transformers import SentenceTransformer
 from tqdm import tqdm
-from transformers import AlbertModel, BertTokenizerFast
 from typing import List
+try:
+    import torch
+except ImportError:
+    torch = None
 
 tqdm = partial(tqdm, position=0, leave=True)  # tqdm 同行进度条
-
-
-class Module(AlbertModel, torch.nn.Module):
-    pass
 
 
 class SentenceEmbedding(object):
@@ -32,13 +29,14 @@ class ModelV1(SentenceEmbedding):
 
         self.pretrained = pretrained
 
-        self.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-
         if skip_load_model:
             return
 
+        from transformers import AlbertModel, BertTokenizerFast
+
+        self.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
         self.tokenizer: BertTokenizerFast = BertTokenizerFast.from_pretrained(self.pretrained)
-        self.model: Module = AlbertModel.from_pretrained(self.pretrained)
+        self.model = AlbertModel.from_pretrained(self.pretrained)
         self.model.to(device=self.device)
 
         self.model.eval()
@@ -108,6 +106,7 @@ class ModelV1(SentenceEmbedding):
 
 class ModelV2(SentenceEmbedding):
     def __init__(self, pretrained: str, _: str = 'MEAN'):
+        from sentence_transformers import SentenceTransformer
         self.pretrained = pretrained
         self.encoder = SentenceTransformer(self.pretrained)
 
@@ -125,6 +124,7 @@ class ModelV3(ModelV1):
         
         super(ModelV3, self).__init__(pretrained, embedding_type, skip_cls, max_length, skip_load_model=True)
 
+        self.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
         self.tokenizer: AutoTokenizer = AutoTokenizer.from_pretrained(self.pretrained)
         self.model: AutoModel = AutoModel.from_pretrained(self.pretrained)
         self.model.to(device=self.device)
@@ -157,4 +157,4 @@ class OnnxModel(ModelV1):
         return {"last_hidden_state": outputs[0], "pooler_output": outputs[1]}
 
 
-Model = ModelV2
+Model = OnnxModel
