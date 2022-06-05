@@ -23,7 +23,7 @@ class BaseModel(Model):
 
 class JSONField(TextField):
     def db_value(self, value: dict) -> str:
-        return json.dumps(value)
+        return json.dumps(value, ensure_ascii=False, separators=(',', ':'))
 
     def python_value(self, value: str) -> dict:
         return json.loads(value)

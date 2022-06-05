@@ -28,13 +28,13 @@
     }
 
     function reload() {
-        post('/reload', {}, function (response) {
+        post('/api/reload', {}, function (response) {
         });
     }
 
     function submitText() {
         let text = document.getElementById('text').value;
-        post('/chat', {'text': text}, function (response) {
+        post('/api/chat', {'text': text}, function (response) {
             for (let each of ['question', 'answer', 'score']) {
                 document.getElementById(each).innerText = response[each];
             }
