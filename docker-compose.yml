@@ -12,7 +12,7 @@ services:
       timeout: 3s
       retries: 3
     ports:
-      - 3000:3000
+      - "3000:3000"
     environment:
       - TZ=Asia/Shanghai
     volumes:
