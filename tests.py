@@ -89,7 +89,7 @@ class TestRawModel(unittest.TestCase):
 
 class TestModel(unittest.TestCase):
     def setUp(self) -> None:
-        from about.model import Model
+        from about.model import ModelV1 as Model
         self.model = Model('resource/model/albert_chinese_tiny', embedding_type='MAX')
 
     def test_model(self):

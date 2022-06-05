@@ -5,11 +5,11 @@ import random
 
 import numpy as np
 
-from typing import Dict, List, Tuple
+from typing import Dict, List
 
 from .entity import Knowledge, Question, MatchResult
 from .func_set import func_map
-from .model import Model
+from .model import OnnxModel as Model
 from .tools import concatenate_lists, argmax
 
 

@@ -2,7 +2,6 @@ import numpy as np
 from functools import partial  # tqdm 同行进度条
 from tqdm import tqdm
 from typing import List, Dict, Callable
-from .tools import concatenate_lists
 
 try:
     import torch
@@ -153,7 +152,7 @@ class OnnxModel(ModelV1):
 
         super(OnnxModel, self).__init__(pretrained, embedding_type, skip_cls, max_length, skip_load_model=True)
 
-        self.pretrained = pretrained
+        self.pretrained: str = pretrained
         self.tokenizer: Callable = BertTokenizerFast.from_pretrained(self.pretrained)
         self.model: InferenceSession = InferenceSession(os.path.join(self.pretrained, 'model.onnx'))
 
@@ -173,27 +172,3 @@ class OnnxModel(ModelV1):
         encoded_ids: np.ndarray = self.tokenizer(text, return_tensors="np")
         outputs = self.model.run(output_names=self.output_names, input_feed=dict(encoded_ids))
         return {k: v for k, v in zip(self.output_names, outputs)}
-
-    """
-    def _predict_batch(self, text_list: List[str]) -> Dict[str, np.ndarray]:
-        if self.max_length > 0:
-            encoded_ids: np.ndarray = self.tokenizer(text_list, padding='max_length', truncation=True,
-                                                     max_length=self.max_length, return_tensors="np")
-            outputs = self.model.run(output_names=['last_hidden_state', 'pooler_output'], input_feed=dict(encoded_ids))
-            return {"last_hidden_state": outputs[0], "pooler_output": outputs[1]}
-        else:
-            last_hidden_state_list: List[List] = []
-            pooler_output_list: List[List] = []
-            for text in text_list:
-                outputs: List = self._predict(text)
-                last_hidden_state_list.append(outputs[0])
-                pooler_output_list.append(outputs[1])
-
-            last_hidden_state: np.ndarray = np.concatenate(last_hidden_state_list, axis=0)
-            pooler_output: np.ndarray = np.concatenate(pooler_output_list, axis=0)
-
-            return {"last_hidden_state": last_hidden_state, "pooler_output": pooler_output}
-    """
-
-
-Model = OnnxModel
