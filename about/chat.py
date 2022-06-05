@@ -61,7 +61,7 @@ class Chat:
             for each in os.listdir(base_dir) if self.is_ext_supported(each)
         ])
 
-    def __load_knowledge(self, path: str, skip_pickle: bool = False) -> Tuple[List[Knowledge], Dict[str, np.ndarray]]:
+    def __load_knowledge(self, path: str, skip_pickle: bool = False) -> List[Knowledge]:
         path_without_ext, ext = os.path.splitext(path)
         if ext not in self.supported_ext:
             raise ValueError('File extension must be .tsv or .json')
@@ -115,12 +115,13 @@ class Chat:
                 if text not in text_to_vector:
                     text_list.append(text)
 
-        vector_list: List[str] = self.model.embedding_batch(text_list)
-        for text, vector in zip(text_list, vector_list):
-            text_to_vector[text] = vector
-        print('load knowledge from %s' % path)
-        with open(pickle_path, 'wb') as f:
-            pickle.dump(text_to_vector, f)
+        if text_list:
+            vector_list: np.ndarray = self.model.embedding_batch(text_list)
+            for text, vector in zip(text_list, vector_list):
+                text_to_vector[text] = vector
+            print('load knowledge from %s' % path)
+            with open(pickle_path, 'wb') as f:
+                pickle.dump(text_to_vector, f)
 
         for knowledge in knowledge_list:
             for question in knowledge.question_list:
