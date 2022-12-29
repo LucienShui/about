@@ -1,4 +1,4 @@
-FROM nvidia/cuda:11.6.2-base-ubuntu20.04
+FROM nvidia/cuda:11.6.2-cudnn8-runtime-ubuntu20.04
 COPY requirements-gpu-runtime.txt /requirements-gpu-runtime.txt
 RUN  echo 'deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ focal main restricted universe multiverse' > /etc/apt/sources.list && \
      echo 'deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ focal-updates main restricted universe multiverse' >> /etc/apt/sources.list && \
@@ -8,4 +8,4 @@ RUN  echo 'deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ focal main restricte
 RUN pip3 install --no-cache -i https://pypi.tuna.tsinghua.edu.cn/simple -r /requirements-gpu-runtime.txt
 WORKDIR /app
 
-CMD ["python", "main.py"]
+CMD ["python3", "main.py"]

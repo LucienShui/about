@@ -4,7 +4,7 @@ services:
   about:
     build:
       dockerfile: gpu.Dockerfile
-    image: about-runtime:latest
+    image: about-gpu-runtime:latest
     container_name: about
     restart: unless-stopped
     healthcheck:

@@ -5,7 +5,7 @@ from flask import Flask, request, jsonify, Response, render_template
 from about.chat import Chat, ChatResponse
 from about.orm import Trace
 
-bot = Chat()
+bot = Chat(device='gpu')
 app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False
 

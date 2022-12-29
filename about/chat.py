@@ -41,10 +41,10 @@ class ChatResponse:
 
 class Chat:
     def __init__(self, pretrained: str = 'resource/model/simcse-chinese-roberta-wwm-ext',
-                 embedding_type: str = 'MEAN', skip_pickle: bool = False):
+                 embedding_type: str = 'MEAN', skip_pickle: bool = False, device: str = 'cpu'):
         self.supported_ext: List[str] = ['.tsv', '.json']
 
-        self.model: Model = Model(pretrained, embedding_type)
+        self.model: Model = Model(pretrained, embedding_type, device=device)
         self.knowledge_base_dir: str = 'resource/knowledge'  # standard question directory
         self.none_response: ChatResponse = ChatResponse(Knowledge('未命中', ['嘤嘤嘤，这个问题我还不会']), '', -1)
         self.knowledge_list: List[Knowledge] = self.load_knowledge(self.knowledge_base_dir, skip_pickle)

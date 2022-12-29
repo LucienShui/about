@@ -145,8 +145,9 @@ class ModelV3(ModelV1):
 
 
 class OnnxModel(ModelV1):
-    def __init__(self, pretrained: str, embedding_type: str = 'MEAN', skip_cls: bool = False, max_length: int = 0):
-        from onnxruntime import InferenceSession
+    def __init__(self, pretrained: str, embedding_type: str = 'MEAN', skip_cls: bool = False, max_length: int = 0,
+                 device: str = 'cpu'):
+        from onnxruntime import InferenceSession, get_available_providers
         from transformers import BertTokenizerFast
         import os
 
@@ -154,7 +155,20 @@ class OnnxModel(ModelV1):
 
         self.pretrained: str = pretrained
         self.tokenizer: Callable = BertTokenizerFast.from_pretrained(self.pretrained)
-        self.model: InferenceSession = InferenceSession(os.path.join(self.pretrained, 'model.onnx'))
+
+        available_providers: List[str] = get_available_providers()
+        cuda_provider: str = 'CUDAExecutionProvider'
+        tensor_rt_provider: str = 'TensorrtExecutionProvider'
+        cpu_provider: str = 'CPUExecutionProvider'
+        if device == 'gpu' and cuda_provider in available_providers:
+            providers = [cuda_provider]
+        elif device == 'tensor_rt' and tensor_rt_provider in available_providers:
+            providers = [tensor_rt_provider]
+        else:
+            providers = [cpu_provider]
+
+        model_path: str = os.path.join(self.pretrained, 'model.onnx')
+        self.model: InferenceSession = InferenceSession(model_path, providers=providers)
 
         self.output_names = ['last_hidden_state', 'pooler_output']
 
