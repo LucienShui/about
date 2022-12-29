@@ -2,7 +2,8 @@ version: "3"
 
 services:
   about:
-    build: .
+    build:
+      dockerfile: gpu.Dockerfile
     image: about-runtime:latest
     container_name: about
     restart: unless-stopped

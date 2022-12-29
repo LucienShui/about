@@ -1,3 +1,5 @@
+import json
+
 from flask import Flask, request, jsonify, Response, render_template
 
 from about.chat import Chat, ChatResponse
@@ -30,7 +32,11 @@ def chat() -> Response:
 
 
 def main():
-    app.run(host='0.0.0.0', port=3000)
+    with open('config.json') as file:
+        config: dict = json.load(file)
+    host: str = config.get('host', '0.0.0.0')
+    port: int = config.get('port', 3000)
+    app.run(host=host, port=port)
 
 
 if __name__ == '__main__':
