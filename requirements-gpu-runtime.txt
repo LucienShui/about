@@ -1,0 +1,5 @@
+Flask==2.1.2
+onnxruntime-gpu==1.11.1
+peewee==3.14.10
+PyMySQL==1.0.2
+transformers==4.19.2
