@@ -18,6 +18,9 @@ services:
       - TZ=Asia/Shanghai
     volumes:
       - .:/app
+    entrypoint: ["python3"]
+    command: ["main.py"]
+    runtime: nvidia
     depends_on:
       - mysql
 

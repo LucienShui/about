@@ -8,4 +8,5 @@ RUN  echo 'deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ focal main restricte
 RUN pip3 install --no-cache -i https://pypi.tuna.tsinghua.edu.cn/simple -r /requirements-gpu-runtime.txt
 WORKDIR /app
 
-CMD ["python3", "main.py"]
+ENTRYPOINT ["python3"]
+CMD ["main.py"]
