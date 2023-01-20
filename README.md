@@ -54,5 +54,5 @@ python3 main.py
 curl -X POST \
      -H "Content-Type: application/json" \
      -d '{"text": "你好"}' \
-     'http://localhost:3000/chat'
+     'http://localhost:3000/api/chat'
 ```
