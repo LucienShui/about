@@ -21,28 +21,3 @@ services:
     entrypoint: ["python3"]
     command: ["main.py"]
     runtime: nvidia
-    depends_on:
-      - mysql
-
-  mysql:
-    image: mysql:5.5
-    container_name: about-mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
-      interval: 45s
-      timeout: 3s
-      retries: 3
-    restart: always
-    command: [
-      '--character-set-server=utf8mb4',
-      '--collation-server=utf8mb4_unicode_ci'
-    ]
-    environment:
-      MYSQL_USER: username
-      MYSQL_PASSWORD: password
-      MYSQL_ROOT_PASSWORD: password
-      MYSQL_DATABASE: database
-      MYSQL_MAX_ALLOWED_PACKET: 128M
-      MYSQL_INNODB_LOG_FILE_SIZE: 64M
-    volumes:
-      - ./mysql:/var/lib/mysql
