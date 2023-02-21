@@ -137,6 +137,8 @@ dmypy.json
 # resource
 resource/*
 
+!resource/config.example.json
+
 !resource/knowledge/
 resource/knowledge/*
 !resource/knowledge/example.json
