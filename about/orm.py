@@ -1,10 +1,14 @@
-from peewee import Model, MySQLDatabase, SqliteDatabase, AutoField, DateTimeField, TextField, CharField
 import json
+import os
 from datetime import datetime
+
+from peewee import Model, MySQLDatabase, SqliteDatabase, AutoField, DateTimeField, TextField, CharField
+
 from .tools import trace_id
 
+BASE_DIR: str = 'resource'
 
-with open('config.json') as file:
+with open(os.path.join(BASE_DIR, 'config.json')) as file:
     config: dict = json.load(file)
     database_config: dict = config['database']
     if database_config.get('type', 'mysql') == 'mysql':
@@ -13,7 +17,7 @@ with open('config.json') as file:
             passwd=database_config['mysql-password'], host=database_config['mysql-host']
         )
     else:
-        db = SqliteDatabase(database_config['sqlite-file'])
+        db = SqliteDatabase(os.path.join(BASE_DIR, database_config['sqlite-file']))
 
 
 class BaseModel(Model):
